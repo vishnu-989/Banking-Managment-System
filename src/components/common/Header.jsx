@@ -325,99 +325,59 @@ export const Header = ({ activeTab, setActiveTab }) => {
             </button>
 
             {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl glass-panel p-3 shadow-2xl border border-slate-700 z-50 space-y-2">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 pt-1 pb-1">
-                  Demo Role Switcher
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl glass-panel p-4 shadow-2xl border border-slate-700 z-50 space-y-4">
+                
+                {/* Authenticated User Header */}
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                  <img 
+                    src={currentUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"} 
+                    alt={currentUser?.name || "User"} 
+                    className="h-10 w-10 rounded-full object-cover border-2 border-indigo-500/50" 
+                  />
+                  <div className="flex-1 truncate">
+                    <div className="text-sm font-extrabold text-white truncate">{currentUser?.name || "User"}</div>
+                    <div className="text-xs font-semibold text-indigo-400">{currentRole} Access</div>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-slate-500 px-2 uppercase">Customers</div>
-                  {customers.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        switchRole("Customer", c);
-                        setShowRoleDropdown(false);
-                        setActiveTab('overview');
-                      }}
-                      className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                        currentRole === 'Customer' && currentUser?.id === c.id ? 'bg-indigo-600/30 border border-indigo-500/50 text-white' : 'hover:bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <img src={c.avatar} alt={c.name} className="h-7 w-7 rounded-full object-cover" />
-                      <div className="flex-1 truncate">
-                        <div className="text-xs font-bold">{c.name}</div>
-                        <div className="text-[10px] text-slate-400 truncate">Customer • {c.accounts[0]?.accountNumber}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-1 pt-1 border-t border-slate-800">
-                  <div className="text-[10px] font-bold text-slate-500 px-2 uppercase">Bank Staff (Employee)</div>
-                  {employees.map((e) => (
-                    <button
-                      key={e.id}
-                      onClick={() => {
-                        switchRole("Employee", e);
-                        setShowRoleDropdown(false);
-                        setActiveTab('desk');
-                      }}
-                      className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                        currentRole === 'Employee' && currentUser?.id === e.id ? 'bg-teal-600/30 border border-teal-500/50 text-white' : 'hover:bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <img src={e.avatar} alt={e.name} className="h-7 w-7 rounded-full object-cover" />
-                      <div className="flex-1 truncate">
-                        <div className="text-xs font-bold">{e.name}</div>
-                        <div className="text-[10px] text-teal-400 truncate">{e.role}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="pt-1 border-t border-slate-800">
-                  <button
-                    onClick={() => {
-                      switchRole("Admin");
-                      setShowRoleDropdown(false);
-                      setActiveTab('admin-metrics');
-                    }}
-                    className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                      currentRole === 'Admin' ? 'bg-purple-600/30 border border-purple-500/50 text-white' : 'hover:bg-slate-800 text-slate-300'
-                    }`}
-                  >
-                    <div className="h-7 w-7 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                      <ShieldCheck className="h-4 w-4" />
+                {/* Account / Session Info */}
+                <div className="space-y-2 text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-400">Email / ID:</span>
+                    <span className="font-mono text-slate-200 truncate max-w-[130px]">{currentUser?.email || currentUser?.id}</span>
+                  </div>
+                  {currentRole === 'Customer' && currentUser?.accounts?.[0] && (
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-400">Account:</span>
+                      <span className="font-mono text-indigo-300">{currentUser.accounts[0].accountNumber}</span>
                     </div>
-                    <div className="flex-1 truncate">
-                      <div className="text-xs font-bold">Sarah Connor</div>
-                      <div className="text-[10px] text-purple-300 truncate">System Director / Admin</div>
+                  )}
+                  {currentRole === 'Employee' && (
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-400">Title:</span>
+                      <span className="text-teal-300 font-medium truncate max-w-[130px]">{currentUser?.role}</span>
                     </div>
-                  </button>
+                  )}
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-400">Status:</span>
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Active Session
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                {/* Sign Out Action */}
+                <div className="pt-1">
                   <button
                     onClick={() => {
                       setShowRoleDropdown(false);
                       logout();
                     }}
-                    className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition border border-slate-700/80"
+                    className="w-full py-2.5 px-4 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition border border-rose-500/30 shadow-lg"
                   >
-                    <LogOut className="h-3.5 w-3.5 text-rose-400" />
-                    <span>Sign Out of {currentRole} Session</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      resetDemoData();
-                      setShowRoleDropdown(false);
-                    }}
-                    className="w-full py-1.5 rounded-xl bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Reset All Demo Data</span>
+                    <LogOut className="h-4 w-4 text-rose-400" />
+                    <span>Sign Out of Account</span>
                   </button>
                 </div>
 

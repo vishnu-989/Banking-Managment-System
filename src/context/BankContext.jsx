@@ -102,6 +102,77 @@ export const BankProvider = ({ children }) => {
     { id: 1, text: "Welcome to ApexBank Premier Banking! Your 2FA security is active.", time: "Just now", read: false }
   ]);
 
+  // Persist state
+  useEffect(() => { localStorage.setItem('apex_bank_customers', JSON.stringify(customers)); }, [customers]);
+  useEffect(() => { localStorage.setItem('apex_bank_employees', JSON.stringify(employees)); }, [employees]);
+  useEffect(() => { localStorage.setItem('apex_bank_transactions', JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem('apex_bank_loans', JSON.stringify(loans)); }, [loans]);
+  useEffect(() => { localStorage.setItem('apex_bank_supportTickets', JSON.stringify(supportTickets)); }, [supportTickets]);
+  useEffect(() => { localStorage.setItem('apex_bank_fraudAlerts', JSON.stringify(fraudAlerts)); }, [fraudAlerts]);
+  useEffect(() => { localStorage.setItem('apex_bank_ratesConfig', JSON.stringify(ratesConfig)); }, [ratesConfig]);
+  useEffect(() => { localStorage.setItem('apex_bank_auditLogs', JSON.stringify(auditLogs)); }, [auditLogs]);
+
+  // Reset Demo Data
+  const resetDemoData = () => {
+    localStorage.removeItem('apex_bank_customers');
+    localStorage.removeItem('apex_bank_employees');
+    localStorage.removeItem('apex_bank_transactions');
+    localStorage.removeItem('apex_bank_loans');
+    localStorage.removeItem('apex_bank_supportTickets');
+    localStorage.removeItem('apex_bank_fraudAlerts');
+    localStorage.removeItem('apex_bank_ratesConfig');
+    localStorage.removeItem('apex_bank_auditLogs');
+
+    setCustomers(INITIAL_CUSTOMERS.map(c => ({ ...c, billers: DEFAULT_BILLERS })));
+    setEmployees(INITIAL_EMPLOYEES);
+    setTransactions(INITIAL_TRANSACTIONS);
+    setLoans(INITIAL_LOANS);
+    setSupportTickets(INITIAL_SUPPORT_TICKETS);
+    setFraudAlerts(INITIAL_FRAUD_ALERTS);
+    setAuditLogs(INITIAL_AUDIT_LOGS);
+    setCurrentUser(INITIAL_CUSTOMERS[0]);
+    addNotification("Demo data reset to factory default state.");
+  };
+
+  const logAudit = (action, details, actorOverride = null) => {
+    const actorName = actorOverride || (currentRole === 'Admin' ? ADMIN_USER.name : (currentUser?.name || 'System'));
+    const newLog = {
+      id: `LOG-${Date.now().toString().slice(-6)}`,
+      timestamp: new Date().toLocaleString(),
+      actor: actorName,
+      role: currentRole,
+      action,
+      details
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  const addNotification = (text) => {
+    const newNotif = {
+      id: Date.now(),
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const switchRole = (role, userObject = null) => {
+    setCurrentRole(role);
+    if (role === "Admin") {
+      setCurrentUser(ADMIN_USER);
+      logAudit("Role Switch", "Switched session view to System Administrator Portal", ADMIN_USER.name);
+    } else if (role === "Employee") {
+      const emp = userObject || employees[0];
+      setCurrentUser(emp);
+      logAudit("Role Switch", `Switched session view to Employee Portal as ${emp.name} (${emp.role})`, emp.name);
+    } else {
+      const cust = userObject || customers[0];
+      setCurrentUser(cust);
+      logAudit("Role Switch", `Switched session view to Customer Portal as ${cust.name}`, cust.name);
+    }
+  };
+
   // Login handler
   const login = ({ email, password, portalType }) => {
     const trimmedEmail = (email || '').trim().toLowerCase();
