@@ -31,15 +31,20 @@ import { FraudRiskCenter } from './components/admin/FraudRiskCenter';
 import { ProductRatesConfig } from './components/admin/ProductRatesConfig';
 import { AuditLogs } from './components/admin/AuditLogs';
 
+import { Login } from './components/auth/Login';
 import { Building2, Lock } from 'lucide-react';
 
 const MainContent = () => {
-  const { currentRole, isMobileView } = useBank();
+  const { isAuthenticated, currentRole, isMobileView } = useBank();
   const [activeTab, setActiveTab] = useState(() => {
     if (currentRole === 'Admin') return 'admin-metrics';
     if (currentRole === 'Employee') return 'desk';
     return 'overview';
   });
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-between">

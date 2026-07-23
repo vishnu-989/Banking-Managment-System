@@ -72,83 +72,117 @@ export const BankProvider = ({ children }) => {
 
   const [systemLockdown, setSystemLockdown] = useState(false);
 
-  // Current session state
-  const [currentRole, setCurrentRole] = useState("Customer"); 
-  const [currentUser, setCurrentUser] = useState(customers[0]); 
+  // Current authentication & session state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return sessionStorage.getItem('apex_bank_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [currentRole, setCurrentRole] = useState(() => {
+    try {
+      return sessionStorage.getItem('apex_bank_role') || "Customer";
+    } catch {
+      return "Customer";
+    }
+  }); 
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('apex_bank_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return customers[0];
+  }); 
+
   const [isMobileView, setIsMobileView] = useState(false); 
   const [notifications, setNotifications] = useState([
     { id: 1, text: "Welcome to ApexBank Premier Banking! Your 2FA security is active.", time: "Just now", read: false }
   ]);
 
-  // Persist state
-  useEffect(() => { localStorage.setItem('apex_bank_customers', JSON.stringify(customers)); }, [customers]);
-  useEffect(() => { localStorage.setItem('apex_bank_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('apex_bank_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('apex_bank_loans', JSON.stringify(loans)); }, [loans]);
-  useEffect(() => { localStorage.setItem('apex_bank_supportTickets', JSON.stringify(supportTickets)); }, [supportTickets]);
-  useEffect(() => { localStorage.setItem('apex_bank_fraudAlerts', JSON.stringify(fraudAlerts)); }, [fraudAlerts]);
-  useEffect(() => { localStorage.setItem('apex_bank_ratesConfig', JSON.stringify(ratesConfig)); }, [ratesConfig]);
-  useEffect(() => { localStorage.setItem('apex_bank_auditLogs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  // Login handler
+  const login = ({ email, password, portalType }) => {
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    const trimmedPassword = (password || '').trim();
 
-  // Reset Demo Data
-  const resetDemoData = () => {
-    localStorage.removeItem('apex_bank_customers');
-    localStorage.removeItem('apex_bank_employees');
-    localStorage.removeItem('apex_bank_transactions');
-    localStorage.removeItem('apex_bank_loans');
-    localStorage.removeItem('apex_bank_supportTickets');
-    localStorage.removeItem('apex_bank_fraudAlerts');
-    localStorage.removeItem('apex_bank_ratesConfig');
-    localStorage.removeItem('apex_bank_auditLogs');
+    if (!trimmedEmail) return { success: false, message: "Please enter your email address or account number." };
+    if (!trimmedPassword) return { success: false, message: "Please enter your password or PIN." };
 
-    setCustomers(INITIAL_CUSTOMERS.map(c => ({ ...c, billers: DEFAULT_BILLERS })));
-    setEmployees(INITIAL_EMPLOYEES);
-    setTransactions(INITIAL_TRANSACTIONS);
-    setLoans(INITIAL_LOANS);
-    setSupportTickets(INITIAL_SUPPORT_TICKETS);
-    setFraudAlerts(INITIAL_FRAUD_ALERTS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setCurrentUser(INITIAL_CUSTOMERS[0]);
-    addNotification("Demo data reset to factory default state.");
-  };
-
-  const logAudit = (action, details, actorOverride = null) => {
-    const actorName = actorOverride || (currentRole === 'Admin' ? ADMIN_USER.name : (currentUser?.name || 'System'));
-    const newLog = {
-      id: `LOG-${Date.now().toString().slice(-6)}`,
-      timestamp: new Date().toLocaleString(),
-      actor: actorName,
-      role: currentRole,
-      action,
-      details
-    };
-    setAuditLogs(prev => [newLog, ...prev]);
-  };
-
-  const addNotification = (text) => {
-    const newNotif = {
-      id: Date.now(),
-      text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      read: false
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-  };
-
-  const switchRole = (role, userObject = null) => {
-    setCurrentRole(role);
-    if (role === "Admin") {
-      setCurrentUser(ADMIN_USER);
-      logAudit("Role Switch", "Switched session view to System Administrator Portal", ADMIN_USER.name);
-    } else if (role === "Employee") {
-      const emp = userObject || employees[0];
-      setCurrentUser(emp);
-      logAudit("Role Switch", `Switched session view to Employee Portal as ${emp.name} (${emp.role})`, emp.name);
-    } else {
-      const cust = userObject || customers[0];
-      setCurrentUser(cust);
-      logAudit("Role Switch", `Switched session view to Customer Portal as ${cust.name}`, cust.name);
+    if (portalType === "Admin") {
+      if (trimmedEmail === ADMIN_USER.email.toLowerCase() || trimmedEmail === "admin") {
+        if (trimmedPassword === "Password@123" || trimmedPassword === "admin") {
+          setIsAuthenticated(true);
+          setCurrentRole("Admin");
+          setCurrentUser(ADMIN_USER);
+          sessionStorage.setItem('apex_bank_auth', 'true');
+          sessionStorage.setItem('apex_bank_role', 'Admin');
+          sessionStorage.setItem('apex_bank_user', JSON.stringify(ADMIN_USER));
+          logAudit("User Login", `Admin ${ADMIN_USER.name} logged into Executive Admin Portal`, ADMIN_USER.name);
+          addNotification(`Welcome back, ${ADMIN_USER.name}! Administrator session started.`);
+          return { success: true };
+        }
+      }
+      return { success: false, message: "Invalid Executive Admin email or password." };
     }
+
+    if (portalType === "Employee") {
+      const emp = employees.find(e => 
+        e.email.toLowerCase() === trimmedEmail || 
+        e.id.toLowerCase() === trimmedEmail ||
+        e.name.toLowerCase() === trimmedEmail
+      );
+
+      if (emp) {
+        if (emp.status === "Suspended") {
+          return { success: false, message: "Employee account is suspended. Contact Administrator." };
+        }
+        if (trimmedPassword === "Password@123" || trimmedPassword === "1234") {
+          setIsAuthenticated(true);
+          setCurrentRole("Employee");
+          setCurrentUser(emp);
+          sessionStorage.setItem('apex_bank_auth', 'true');
+          sessionStorage.setItem('apex_bank_role', 'Employee');
+          sessionStorage.setItem('apex_bank_user', JSON.stringify(emp));
+          logAudit("User Login", `Employee ${emp.name} (${emp.role}) logged in.`, emp.name);
+          addNotification(`Welcome back, ${emp.name}! Staff desk session active.`);
+          return { success: true };
+        }
+      }
+      return { success: false, message: "Invalid Employee corporate email or password." };
+    }
+
+    // Customer Login
+    const cust = customers.find(c => 
+      c.email.toLowerCase() === trimmedEmail || 
+      c.id.toLowerCase() === trimmedEmail ||
+      (c.accounts && c.accounts.some(acc => acc.accountNumber === (email || '').trim()))
+    );
+
+    if (cust) {
+      if (trimmedPassword === (cust.password || "Password@123") || trimmedPassword === (cust.pin || "4321") || trimmedPassword === "1234") {
+        setIsAuthenticated(true);
+        setCurrentRole("Customer");
+        setCurrentUser(cust);
+        sessionStorage.setItem('apex_bank_auth', 'true');
+        sessionStorage.setItem('apex_bank_role', 'Customer');
+        sessionStorage.setItem('apex_bank_user', JSON.stringify(cust));
+        logAudit("User Login", `Customer ${cust.name} logged in successfully.`, cust.name);
+        addNotification(`Welcome back, ${cust.name}!`);
+        return { success: true };
+      }
+    }
+    return { success: false, message: "Invalid email, account number, or password." };
+  };
+
+  // Logout handler
+  const logout = () => {
+    logAudit("User Logout", `${currentUser?.name || 'User'} logged out.`);
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('apex_bank_auth');
+    sessionStorage.removeItem('apex_bank_role');
+    sessionStorage.removeItem('apex_bank_user');
   };
 
   // EMPLOYEE FEATURE: Create New Customer Profile at Counter
@@ -755,6 +789,9 @@ export const BankProvider = ({ children }) => {
     systemLockdown,
     auditLogs,
     fxRates: FX_RATES,
+    isAuthenticated,
+    login,
+    logout,
     currentRole,
     currentUser,
     isMobileView,

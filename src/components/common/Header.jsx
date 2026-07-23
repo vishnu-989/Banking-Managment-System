@@ -8,7 +8,8 @@ import {
   Bell, 
   ChevronDown, 
   CheckCircle2,
-  RotateCcw
+  RotateCcw,
+  LogOut
 } from 'lucide-react';
 
 export const Header = ({ activeTab, setActiveTab }) => {
@@ -21,7 +22,8 @@ export const Header = ({ activeTab, setActiveTab }) => {
     isMobileView, 
     setIsMobileView,
     notifications,
-    resetDemoData
+    resetDemoData,
+    logout
   } = useBank();
 
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -395,16 +397,27 @@ export const Header = ({ activeTab, setActiveTab }) => {
                   </button>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <button
+                    onClick={() => {
+                      setShowRoleDropdown(false);
+                      logout();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition border border-slate-700/80"
+                  >
+                    <LogOut className="h-3.5 w-3.5 text-rose-400" />
+                    <span>Sign Out of {currentRole} Session</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       resetDemoData();
                       setShowRoleDropdown(false);
                     }}
-                    className="w-full py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition"
+                    className="w-full py-1.5 rounded-xl bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    <span>Reset All Demo Data & Utility Payees</span>
+                    <RotateCcw className="h-3 w-3" />
+                    <span>Reset All Demo Data</span>
                   </button>
                 </div>
 
